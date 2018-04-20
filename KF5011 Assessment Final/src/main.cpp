@@ -23,17 +23,17 @@ int throttle;
 double orientation;
 
 //Socket addresses
-SocketAddress lander("192.168.1.161",65200);
-SocketAddress dash("192.168.1.161",20770);
+SocketAddress lander("192.168.1.162",65200);
+SocketAddress dash("192.168.1.162",20771);
 
 EthernetInterface eth;
 UDPSocket udp;
 
 /* States from Lander */
 char altitude [50];
-char feul [50];
-char flying [50];
-char crashed [50];
+char feul [25];
+char flying [25];
+char crashed [25];
 char orientation1 [50];
 char velocityX [50];
 char velocityY [50];
@@ -46,15 +46,15 @@ int send(char *message, size_t s, SocketAddress dest)
   return r;
 }
 
-/* Task for asynchronous UDP communications with dashboard */
+/* Task for asynchronous UDP communications with dashboard
 void dashboard(void)
 {
-  char dashBuffer[1024];
 
-  printf("Orientation%s\n", orientation1); // ... but this line fails to print
+
+  printf("Orientation%s\n", orientation1); // ...... but this line does not
 
   send(dashBuffer, strlen(dashBuffer), dash);
-}
+}*/
 
 /* Task for synchronous UDP communications wi lander */
 void communications(void)
@@ -74,7 +74,7 @@ void communications(void)
       sprintf(orientationString, "%.1lf" , orientation);
     }
 
-    char landerMessage [1024], line[80];
+    char landerMessage [1024], line[50];
     landerMessage[0] = '\0';
 
     strcat(landerMessage, "command:!\n");
@@ -86,9 +86,9 @@ void communications(void)
     printf("Message sent...\n");
 
     char buffer[1024];
-    int len = NULL;
+    int len = -1;
 
-    while(len == NULL)
+    while(len == -1)
     {
       printf("Listening for response...\n");
       len = udp.recvfrom(&source,buffer,
@@ -173,9 +173,12 @@ void communications(void)
     tok = strtok(NULL, "\n");
     strcpy(velocityY, tok);
 
-    printf("Orientation%s\n", orientation1); //This line is printed...
+    printf("Orientation%s\n", orientation1); // This line prints the orientation1 character array.....
 
-    dashboard(); // dashboard function called. dashboard function on line 50
+    sprintf(buffer, "altitude:%s\nfeul:%s\nflying:%s\ncrashed:%s\norientation:%s\nVx:%s\nVy:%s\n"
+    , altitude, feul, flying, crashed, orientation1, velocityX, velocityY);
+    printf("DashBuffer:\n%s\n", buffer);
+    send(buffer, strlen(buffer), dash);
 }
 
 /* Task for polling sensors */
@@ -216,39 +219,7 @@ int main() {
 
         //wait(1);
         /*TODO you may want to change this time
-                    to get a responsive display
-
-Example Output:
-
-IP Address is: 192.168.1.158
-lander is on 192.168.1.161/65200
-dash   is on 192.168.1.161/20770
-command:!
-throttle:100
-roll:+1.0
-Message sent...
-Listening for response...
-Lander has responded!
-command:=
-altitude:464.5519000000001
-fuel:100.0
-flying:1
-crashed:0
-orientation:294.0
-Vx:10.0
-Vy:17.937999999999953
-
-command:=
-altitude:464.5519000000001
-fuel:100.0
-flying:1
-crashed:0
-orientation:294.0
-Vx:10.0
-Vy:17.937999999999953
-Orientation294.0
-
-*/
+                    to get a responsive display */
     }
 
 }
